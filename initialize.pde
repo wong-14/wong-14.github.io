@@ -1528,7 +1528,8 @@ void draw_setup_wifi_load() {
   text(""+progressBar+"%", xmid, height*0.7);
   if(second() != lastSecond) {
     lastSecond = second();
-    progressBar += random(1, 25);
+    //progressBar += random(1, 25);
+    progressBar += 10;
   }
   if(progressBar >= 100) {
     st = eState.CREATE_USER;
