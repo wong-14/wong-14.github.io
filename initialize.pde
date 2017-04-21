@@ -1523,6 +1523,7 @@ void draw_setup_date_year() {
 void draw_setup_wifi_load() {
   background(bg);
   textAlign(CENTER);
+  textSize(font_size_large);
   text(strLoading[lang], xmid, ymid);
   text(""+progressBar+"%", xmid, height*0.7);
   if(second() != lastSecond) {
