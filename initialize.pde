@@ -74,6 +74,9 @@ float lastSecond;
 int progressBar;
 String[][] userModules;
 int nModules = 3;
+int nUsableModules = 10;
+int nCycleLimit = 3;
+int[][] randomModule;
 
 String[][] wifi_spots = {
   {"super-wifi", "full", ""},
@@ -842,6 +845,8 @@ bt[] panel_lang_toggle;
 bt[] panel_flux_toggle;
 bt[] panel_units_toggle;
 
+PImage[][] appCycle;
+
 class ePanel {
   final static int OFF = 0;
   final static int SELECT_USER = 1;
@@ -1058,7 +1063,19 @@ void setup() {
     panel_units_toggle[i] = new bt(xheader+2.5*spacing+xOffset[i], yheader_panel_text+2.0*spacing, font_size_small*0.6, "ERROR", true);
   }
   
-  
+  appCycle = new PImage[nUsableModules][nCycleLimit];
+  for(int i = 0; i < nUsableModules; i++) {
+    for(int j = 0; j < nCycleLimit; j++) {
+      String s = strDockApps[i] + str(j) + ".png";
+      appCycle[i][j] = loadImage(s);
+    }
+  }
+  randomModule = new int[maxUsers][nUsableModules];
+  for(int i = 0; i < maxUsers; i++) {
+    for(int j = 0; j < nUsableModules; j++) {
+      randomModule[i][j] = int(floor(random(0, 2.999)));
+    }
+  }
 }
 
 void draw_status_bar(int step) {
@@ -1403,7 +1420,8 @@ void draw_rects(int sd) {
 }
 
 void draw_module(int sd, int md, String ap) {
-  if(findApp(ap) == -1) {
+  int whichApp = findApp(ap);
+  if(whichApp == -1) {
     return;
   }
   stroke(0);
@@ -1414,18 +1432,21 @@ void draw_module(int sd, int md, String ap) {
     fill(0);
     text(ap, xmid-(5.0/32)*width+xOffset[sd], ymid);
     fill(255);
+    image(appCycle[whichApp][randomModule[loggedUser[sd]][whichApp]], xmid-(5.0/32)*width+xOffset[sd], ymid);
   }
   else if(md == 1) {
     rect(xmid+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
     fill(0);
     text(ap, xmid+xOffset[sd], ymid);
     fill(255);
+    image(appCycle[whichApp][randomModule[loggedUser[sd]][whichApp]], xmid+xOffset[sd], ymid);
   }
   else {
     rect(xmid+(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
     fill(0);
     text(ap, xmid+(5.0/32)*width+xOffset[sd], ymid);
     fill(255);
+    image(appCycle[whichApp][randomModule[loggedUser[sd]][whichApp]], xmid+(5.0/32)*width+xOffset[sd], ymid);
   }
   textAlign(LEFT);
   noStroke();
@@ -2064,10 +2085,30 @@ void mousePressed() {
           }
           break;
         case ePanel.ACTIVE:
+          dks[i].update();
           if(panel_apps_button[i].isMouseOver()) {
             isDockActive[i] = !isDockActive[i];
           }
-          dks[i].update();
+          else if(mouseY <= ymid+height/4 && mouseY >= ymid-height/4) {
+            if(mouseX <= xmid+xOffset[i]+width/16 && mouseX >= xmid+xOffset[i]-width/16) {
+              int idx = findApp(userModules[loggedUser[i]][1]);
+              if (findApp(userModules[loggedUser[i]][1]) != -1) {
+                randomModule[loggedUser[i]][idx] = (randomModule[loggedUser[i]][idx] + 1)%nCycleLimit;
+              }
+            }
+            else if (mouseX <= xmid-(5.0/32)*width+xOffset[i]+width/16 && mouseX >= xmid-(5.0/32)*width+xOffset[i]-width/16) {
+              int idx = findApp(userModules[loggedUser[i]][0]);
+              if (findApp(userModules[loggedUser[i]][0]) != -1) {
+                randomModule[loggedUser[i]][idx] = (randomModule[loggedUser[i]][idx] + 1)%nCycleLimit;
+              }
+            }
+            else if (mouseX <= xmid+(5.0/32)*width+xOffset[i]+width/16 && mouseX >= xmid+(5.0/32)*width+xOffset[i]-width/16) {
+              int idx = findApp(userModules[loggedUser[i]][2]);
+              if (findApp(userModules[loggedUser[i]][2]) != -1) {
+                randomModule[loggedUser[i]][idx] = (randomModule[loggedUser[i]][idx] + 1)%nCycleLimit;
+              }
+            }
+          }
           break;
         case ePanel.LOG_OUT:
           if(panel_yes_button[i].isMouseOver()) {
