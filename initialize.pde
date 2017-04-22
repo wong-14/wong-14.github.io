@@ -1253,7 +1253,7 @@ void draw_time_and_date() {
   
   int m = (minute() + offsetMinute) % 60;
   int h = (hour() + offsetHour) % 24;
-  if(m < nMinute) {
+  if(m < minute()) {
     h = (h+1)%24;
   }
   minuteString = m < 10 ? ("0" + m) : ("" + m);
