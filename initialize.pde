@@ -1,5 +1,7 @@
 color bg_default = color(197, 214, 224);
 color bg_flux = color(224, 207, 197);
+color dark_gray = color(169, 169, 169);
+color light_gray = color(211, 211, 211);
 color bg;
 color hover_tint = color(0, 153, 204);
 color selected_tint = color(169, 169, 169);
@@ -48,6 +50,7 @@ String[] usernames = {};
 String[] passwords = {};
 int freeUser = 0;
 String location = "chicago";
+int[] selectedApp = {-1, -1};
 int nHour = 0;
 int nDay;
 int nMonth;
@@ -69,11 +72,25 @@ float[] xOffset = {0, 0};
 int[] loggedUser = {-1, -1};
 float lastSecond;
 int progressBar;
+String[][] userModules;
+int nModules = 3;
 
 String[][] wifi_spots = {
   {"super-wifi", "full", ""},
   {"xfinity wifi", "low", "garbage"},
   {"FBI Surveillance Van", "half", "password"}
+};
+
+String[] strOverwrite = {
+  "overwrite",
+  "écraser",
+  "exagerar"
+};
+
+String[] strOpen = {
+  "open",
+  "libre",
+  "válido"
 };
 
 String[] strLanguages = {
@@ -194,6 +211,12 @@ String[] strUsers = {
   "Users", 
   "Utilisateurs", 
   "Usuarios"
+};
+
+String[] strAreaSelection = {
+  "select an area to place",
+  "sélectionnez une zone à placer",
+  "seleccione un área para colocar"
 };
 
 String[] strCreateUser = {
@@ -693,6 +716,20 @@ class appRow {
     for(int i = 0; i < n; i++) {
       if(dockButtons[i].isMouseOver()) {
         activeApps[loggedUser[sd]][i + firstLoc] = !activeApps[loggedUser[sd]][i + firstLoc];
+        if(activeApps[loggedUser[sd]][i + firstLoc]) {
+          if(i+firstLoc < 10) {  // any icon before dock_settings
+            selectedApp[sd] = i+firstLoc;
+            panels[sd] = ePanel.SELECT_PANE;
+          }
+        }
+        else {
+          // toggled off
+          for(int j = 0; j < 3; j++) {
+            if(userModules[loggedUser[sd]][j].equals(strDockApps[i + firstLoc])) {
+              userModules[loggedUser[sd]][j] = "";
+            }
+          }
+        }
       }
     }
     if(activeApps[loggedUser[sd]][findApp("dock_logout")]) {
@@ -816,6 +853,7 @@ class ePanel {
   final static int LOG_OUT = 7;
   final static int SETTINGS = 8;
   final static int DELETE_USER = 9;
+  final static int SELECT_PANE = 10;
   
   ePanel() {
     // empty
@@ -964,6 +1002,13 @@ void setup() {
   takenSpot = new boolean[maxUsers];
   for(int i = 0; i < maxUsers; i++) {
     takenSpot[i] = false;
+  }
+  
+  userModules = new String[maxUsers][nModules];
+  for(int i = 0; i < maxUsers; i++) {
+    for(int j = 0; j < nModules; j++) {
+      userModules[i][j] = "";
+    }
   }
   
   panel_user_icon = new bt[2];
@@ -1347,6 +1392,52 @@ void draw_app_dock(int sd) {
   }
 }
 
+void draw_rects(int sd) {
+  rectMode(CENTER);
+  rect(xmid+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+  rect(xmid-(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+  rect(xmid+(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+  textAlign(CENTER);
+  text(strAreaSelection[lang], xmid+xOffset[sd], height*0.85);
+  textAlign(LEFT);
+}
+
+void draw_module(int sd, int md, String ap) {
+  if(findApp(ap) == -1) {
+    return;
+  }
+  stroke(0);
+  imageMode(CENTER);
+  textAlign(CENTER);
+  if(md == 0) {
+    rect(xmid-(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(0);
+    text(ap, xmid-(5.0/32)*width+xOffset[sd], ymid);
+    fill(255);
+  }
+  else if(md == 1) {
+    rect(xmid+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(0);
+    text(ap, xmid+xOffset[sd], ymid);
+    fill(255);
+  }
+  else {
+    rect(xmid+(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(0);
+    text(ap, xmid+(5.0/32)*width+xOffset[sd], ymid);
+    fill(255);
+  }
+  textAlign(LEFT);
+  noStroke();
+}
+
+void draw_modules(int sd) {
+  for(int i = 0; i < nModules; i++) {
+    String s = userModules[loggedUser[sd]][i];
+    draw_module(sd, i, s);
+  }
+}
+
 void draw_panel_active(int sd) {
   textSize(font_size_small*0.7);
   if(sd == 0) { // left user
@@ -1361,6 +1452,8 @@ void draw_panel_active(int sd) {
   panel_apps_button[sd].disp();
   
   draw_app_dock(sd);
+  //draw_rects(sd);
+  draw_modules(sd);
 }
 
 void draw_panel_log_out(int sd) {
@@ -1425,6 +1518,55 @@ void draw_delete_user(int sd) {
   panel_apps_button[sd].disp();
 }
 
+void draw_select_pane(int sd) {
+  stroke(255);
+  rectMode(CENTER);
+  textSize(font_size_small*0.6);
+  textAlign(CENTER);
+  if(userModules[loggedUser[sd]][0].length() != 0) {
+    fill(dark_gray);
+    rect(xmid-(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(bg);
+    text(strOverwrite[lang], xmid-(5.0/32)*width+xOffset[sd], ymid);
+  }
+  else {
+    fill(bg);
+    rect(xmid-(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(255);
+    text(strOpen[lang], xmid-(5.0/32)*width+xOffset[sd], ymid);
+  }
+  if(userModules[loggedUser[sd]][1].length() != 0) {
+    fill(dark_gray);
+    rect(xmid+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(bg);
+    text(strOverwrite[lang], xmid+xOffset[sd], ymid);
+  }
+  else {
+    fill(bg);
+    rect(xmid+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(255);
+    text(strOpen[lang], xmid+xOffset[sd], ymid);
+  }
+  if(userModules[loggedUser[sd]][2].length() != 0) {
+    fill(dark_gray);
+    rect(xmid+(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(bg);
+    text(strOverwrite[lang], xmid+(5.0/32)*width+xOffset[sd], ymid);
+  }
+  else {
+    fill(bg);
+    rect(xmid+(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
+    fill(255);
+    text(strOpen[lang], xmid+(5.0/32)*width+xOffset[sd], ymid);
+  }
+  
+  
+  text(strAreaSelection[lang], xmid+xOffset[sd], height*0.85);
+  textAlign(LEFT);
+  fill(255);
+  stroke(bg);
+}
+
 void draw_panes(int sd) {
   if(isPanelActive[sd]) {
     switch(panels[sd]) {
@@ -1459,6 +1601,9 @@ void draw_panes(int sd) {
         break;
       case ePanel.DELETE_USER:
         draw_delete_user(sd);
+        break;
+      case ePanel.SELECT_PANE:
+        draw_select_pane(sd);
         break;
     }
   }
@@ -1975,6 +2120,31 @@ void mousePressed() {
           }
           else if(panel_no_button[i].isMouseOver()) {
             panels[i] = ePanel.SETTINGS;
+          }
+          break;
+        case ePanel.SELECT_PANE:
+          if(mouseY <= ymid+height/4 && mouseY >= ymid-height/4) {
+            if(mouseX <= xmid+xOffset[i]+width/16 && mouseX >= xmid+xOffset[i]-width/16) {
+              if (findApp(userModules[loggedUser[i]][1]) != -1) {
+                activeApps[loggedUser[i]][findApp(userModules[loggedUser[i]][1])] = false;
+              }
+              userModules[loggedUser[i]][1] = strDockApps[selectedApp[i]];
+              panels[i] = ePanel.ACTIVE;
+            }
+            else if (mouseX <= xmid-(5.0/32)*width+xOffset[i]+width/16 && mouseX >= xmid-(5.0/32)*width+xOffset[i]-width/16) {
+              if (findApp(userModules[loggedUser[i]][0]) != -1) {
+                activeApps[loggedUser[i]][findApp(userModules[loggedUser[i]][0])] = false;
+              }
+              userModules[loggedUser[i]][0] = strDockApps[selectedApp[i]];
+              panels[i] = ePanel.ACTIVE;
+            }
+            else if (mouseX <= xmid+(5.0/32)*width+xOffset[i]+width/16 && mouseX >= xmid+(5.0/32)*width+xOffset[i]-width/16) {
+              if (findApp(userModules[loggedUser[i]][2]) != -1) {
+                activeApps[loggedUser[i]][findApp(userModules[loggedUser[i]][2])] = false;
+              }
+              userModules[loggedUser[i]][2] = strDockApps[selectedApp[i]];
+              panels[i] = ePanel.ACTIVE;
+            }
           }
           break;
       }
