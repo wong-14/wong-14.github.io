@@ -1,4 +1,5 @@
 color bg_default = color(197, 214, 224);
+color bg_flux = color(224, 207, 197);
 color bg;
 color hover_tint = color(0, 153, 204);
 color selected_tint = color(169, 169, 169);
@@ -17,6 +18,7 @@ float xheaderright;
 float xheader_text;
 float xheaderleft_text;
 float xheaderright_text;
+float yheader_panel_text;
 float yheader_text;
 float xfooter;
 float yfooter;
@@ -37,12 +39,14 @@ String strExt = "-512.png";
 int length_input = 12;
 int length_pin = 4;
 int nUsers = 0;
+boolean[] takenSpot;
 int nPasswords = 0;
 int maxUsers = 4;
 int userOnLeft = -1;
 int userOnRight = -1;
 String[] usernames = {};
 String[] passwords = {};
+int freeUser = 0;
 String location = "chicago";
 int nHour = 0;
 int nDay;
@@ -54,9 +58,12 @@ boolean wasTimeSet = false;
 String[] daysInMonth = {"31", "29", "31", "30", "31", "30", "31", "31", "30", "31", "30", "31"};
 boolean[] isPanelActive = {false, false};
 boolean[] isDockActive = {false, false};
+boolean isFluxOn = true;
 boolean isActiveCenter = false;
 float ytop;
-String strTemperature = "61";
+String[] strTemperature = {"61", "16"};
+String[] strTempUnit = {" F", " C"};
+boolean isFahr = true;
 float cornerRadius = 5;
 float[] xOffset = {0, 0};
 int[] loggedUser = {-1, -1};
@@ -97,6 +104,12 @@ String[] strDate = {
   "Date", 
   "Date", 
   "Fecha"
+};
+
+String[] strSettings = {
+  "Settings",
+  "Paramètres",
+  "Ajustes"
 };
 
 String[] strLocation = {
@@ -236,6 +249,56 @@ String[] strNo = {
   "non",
   "no"
 };
+
+String[] strColorShift = {
+  "F.lux color",
+  "F.lux couleur",
+  "F.lux color "
+};
+
+String[] strChangeUnits = {
+  "Units of measurement",
+  "Unités de mesure",
+  "Unidades de medida"
+};
+
+String[] strDeleteUser = {
+  "Delete user",
+  "Supprimer l'utilisateur",
+  "Borrar usuario"
+};
+
+String[] strDeleteUser2 = {
+  "Are you sure you want to delete user?",
+  "Êtes-vous sûr de vouloir supprimer l'utilisateur?",
+  "¿Seguro que quieres eliminar el usuario?"
+};
+
+String[] strImperial = {
+  "Imperial",
+  "Impériales",
+  "Imperiales"
+};
+
+String[] strMetric = {
+  "Metric",
+  "Métriques",
+  "Metricas"
+};
+
+String[] strOn = {
+  "On",
+  "Allume",
+  "Encender"
+};
+
+String[] strOff = {
+  "Off",
+  "Éteindre",
+  "Apague"
+};
+
+
 
 String[] strLogout = {
   "Are you sure you want to log out?",
@@ -635,6 +698,9 @@ class appRow {
     if(activeApps[loggedUser[sd]][findApp("dock_logout")]) {
       panels[sd] = ePanel.LOG_OUT;
     }
+    else if (activeApps[loggedUser[sd]][findApp("dock_settings")]) {
+      panels[sd] = ePanel.SETTINGS;
+    }
   }
 }
 
@@ -733,6 +799,11 @@ bt[] panel_back_button;
 bt[] panel_apps_button;
 bt[] panel_yes_button;
 bt[] panel_no_button;
+bt[] panel_settings_icon;
+bt[] panel_delete_user;
+bt[] panel_lang_toggle;
+bt[] panel_flux_toggle;
+bt[] panel_units_toggle;
 
 class ePanel {
   final static int OFF = 0;
@@ -743,6 +814,8 @@ class ePanel {
   final static int CREATE_USER_PIN = 5;
   final static int ACTIVE = 6;
   final static int LOG_OUT = 7;
+  final static int SETTINGS = 8;
+  final static int DELETE_USER = 9;
   
   ePanel() {
     // empty
@@ -790,6 +863,7 @@ class eLanguage {
 }
 eLanguage language;
 int lang;
+int userLang[];
 
 void setup() {
   size(2732, 1536);
@@ -807,7 +881,12 @@ void setup() {
   // end of testing purposes
 */
 
-
+  usernames = new String[maxUsers];
+  passwords = new String[maxUsers];
+  for(int i = 0; i < maxUsers; i++) {
+    usernames[i] = "";
+    passwords[i] = "";
+  }
   icon_size_small = 70*scale;
   icon_size_large = 120*scale;
   fnt = fileDirectory + fnt;
@@ -815,6 +894,7 @@ void setup() {
   font_size_small = 60*scale;
   font_size_large = 120*scale;
   lang = eLanguage.ENGLISH;
+  userLang = new int[maxUsers];
   spacing = 200*scale;
 
 
@@ -837,6 +917,7 @@ void setup() {
   yheader = height*0.273;
   xheader_text = width*0.43;
   yheader_text = height*0.3;
+  yheader_panel_text = height*0.295;
   xfooter = xmid;
   yfooter = height*0.9;
 
@@ -880,7 +961,13 @@ void setup() {
   button_pm = new bt(xmid+spacing, ymid, font_size_large, "PM", true);
   weather_icon = new bt(xmid+0.90*spacing, height*0.07, icon_size_large*1.5, "partly-cloudy-512.png", false, true);
   
+  takenSpot = new boolean[maxUsers];
+  for(int i = 0; i < maxUsers; i++) {
+    takenSpot[i] = false;
+  }
+  
   panel_user_icon = new bt[2];
+  panel_settings_icon = new bt[2];
   panel_create_user_text = new bt[2];
   panel_skip_user_text = new bt[2];
   panel_usernames_text = new bt[2][maxUsers];
@@ -890,15 +977,20 @@ void setup() {
   panel_clear_button = new bt[2];
   panel_back_button = new bt[2];
   panel_apps_button = new bt[2];
+  panel_lang_toggle = new bt[2];
+  panel_flux_toggle = new bt[2];
+  panel_units_toggle = new bt[2];
   nApps = strDockApps.length;
   dks = new dock[2];
   panel_yes_button = new bt[2];
   panel_no_button = new bt[2];
+  panel_delete_user = new bt[2];
   activeApps = new boolean[maxUsers][nApps];
   xOffset[0] = -(width/4);  // left side offset
   xOffset[1] = width/4;  // right side offset
   for(int i = 0; i < 2; i++) {
     panel_user_icon[i] = new bt(xheader + xOffset[i], yheader, icon_size_large, "user-512.png", false, true);
+    panel_settings_icon[i] = new bt(xheader + xOffset[i], yheader, icon_size_large, "settings-512.png", false, true);
     panel_create_user_text[i] = new bt(xheader_text + xOffset[i], yheader_text+3.5*spacing, font_size_small*0.7, "ERROR", true);
     panel_skip_user_text[i] = new bt(xheader_text + 3.0*spacing + xOffset[i], yheader_text+3.5*spacing, font_size_small*0.7, "ERROR", true);
     float y = yheader_text+0.7*spacing;
@@ -915,6 +1007,10 @@ void setup() {
     dks[i] = new dock(xmid - (icon_size_small*1.65) + xOffset[i], height*0.8, i);
     panel_yes_button[i] = new bt(xmid-spacing + xOffset[i]-width*0.02, height*0.7, font_size_small, "ERROR", true);
     panel_no_button[i] = new bt(xmid+spacing + xOffset[i]-width*0.02, height*0.7, font_size_small, "ERROR", true);
+    panel_delete_user[i] = new bt(xheader-(icon_size_small/2)+xOffset[i], yheader_panel_text+2.5*spacing, font_size_small*0.6, "ERROR", true);
+    panel_lang_toggle[i] = new bt(xheader+2.5*spacing+xOffset[i], yheader_panel_text+1.0*spacing, font_size_small*0.6, "ERROR", true);;
+    panel_flux_toggle[i] = new bt(xheader+2.5*spacing+xOffset[i], yheader_panel_text+1.5*spacing, font_size_small*0.6, "ERROR", true);
+    panel_units_toggle[i] = new bt(xheader+2.5*spacing+xOffset[i], yheader_panel_text+2.0*spacing, font_size_small*0.6, "ERROR", true);
   }
   
   
@@ -993,6 +1089,32 @@ boolean check_password(int sd) {
   }
 }
 
+void changeLanguage() {
+  for(int i = 0; i < 2; i++) {
+      panel_create_user_text[i].changeText(strCreateUser[lang]);
+      panel_skip_user_text[i].changeText(strSkip2[lang]);
+      panel_enter_button[i].changeText(strEnter[lang]);
+      panel_clear_button[i].changeText(strClear[lang]);
+      panel_back_button[i].changeText(strBack[lang]);
+      panel_yes_button[i].changeText(strYes[lang]);
+      panel_no_button[i].changeText(strNo[lang]);
+      panel_delete_user[i].changeText(strDeleteUser[lang]);
+      panel_lang_toggle[i].changeText(strLanguages[lang]);
+      if(isFluxOn) {
+        panel_flux_toggle[i].changeText(strOn[lang]);
+      }
+      else {
+        panel_flux_toggle[i].changeText(strOff[lang]);
+      }
+      if(isFahr) {
+        panel_units_toggle[i].changeText(strImperial[lang]);
+      }
+      else {
+        panel_units_toggle[i].changeText(strMetric[lang]);
+      }
+  }
+}
+
 void draw_setup(int s) {
   background(bg);
   textSize(font_size_large);
@@ -1012,16 +1134,7 @@ void draw_setup(int s) {
     create_new_user.changeText(strCreateUser[lang]);
     next_menu.disp();
     back_menu.disp();
-    
-    for(int i = 0; i < 2; i++) {
-      panel_create_user_text[i].changeText(strCreateUser[lang]);
-      panel_skip_user_text[i].changeText(strSkip2[lang]);
-      panel_enter_button[i].changeText(strEnter[lang]);
-      panel_clear_button[i].changeText(strClear[lang]);
-      panel_back_button[i].changeText(strBack[lang]);
-      panel_yes_button[i].changeText(strYes[lang]);
-      panel_no_button[i].changeText(strNo[lang]);
-    }
+    changeLanguage();
     break;
   case eState.SETUP_WIFI:
     text(strWifi[lang], xheader_text, yheader_text);
@@ -1064,7 +1177,6 @@ void draw_setup(int s) {
 
 void draw_time_and_date() {
   float y = ytop + 0.25*spacing;
-  float x = xmid - 1.1*spacing;
   String timeString = "";
   String dateString = "";
   String endString = "";
@@ -1079,18 +1191,20 @@ void draw_time_and_date() {
       endString = "pm";
   }
   if (wasTimeSet) {  // user set time and date
-    timeString = h + ":" + minuteString + " " + endString;
+    timeString = h + ":" + minuteString;
     dateString = strMonths[lang][nMonth] + " " + nDay + ", " + nYear;
   }
   else {
-    timeString = h + ":" + minuteString + " " + endString;
+    timeString = h + ":" + minuteString;
     dateString = strMonths[lang][month()-1] + " " + day() + ", " + year();
   }
   textSize(font_size_small*1.2);
-  textAlign(CENTER);
-  text(timeString, x, ytop);
+  textAlign(RIGHT);
+  text(timeString, xmid-1.47*spacing, ytop);
   textSize(font_size_small*0.6);
-  text(dateString, x, y);
+  text(dateString, xmid-1.05*spacing, y);
+  textSize(font_size_small*0.8);
+  text(endString, xmid-1.05*spacing, ytop);
 }
 
 void draw_weather() {
@@ -1098,8 +1212,20 @@ void draw_weather() {
   float x = xmid + 1.85*spacing;
   textSize(font_size_small*1.2);
   textAlign(RIGHT);
-  text(strTemperature, x, ytop);
+  if(isFahr) {
+    text(strTemperature[0], x, ytop);
+  }
+  else {
+    text(strTemperature[1], x, ytop);
+  }
   textAlign(LEFT);
+  textSize(font_size_small*0.8);
+  if(isFahr) {
+    text(strTempUnit[0], x, ytop-0.09*spacing);
+  }
+  else {
+    text(strTempUnit[1], x, ytop-0.09*spacing);
+  }
   textSize(font_size_small*0.4);
   text("o", x, height*0.038);
   textAlign(LEFT);
@@ -1114,25 +1240,33 @@ void draw_top_pane() {
 }
 
 void draw_panel_select_user(int sd) {
-  textSize(font_size_large);
-  float y = yheader_text;
+  textSize(font_size_small*1.3);
+  float y = yheader_panel_text;
   text(strUsers[lang], xheader_text+xOffset[sd], y);
   panel_user_icon[sd].disp();
   if (nUsers < maxUsers) {
     panel_create_user_text[sd].disp();
   }
   panel_skip_user_text[sd].disp();
-  for(int i = 0; i < nPasswords; i++) {
-    panel_usernames_text[sd][i].changeText(usernames[i]);
-    panel_usernames_text[sd][i].disp();
+  int otherUser = sd == 0 ? loggedUser[1] : loggedUser[0];
+  
+  y = yheader_text+0.7*spacing;
+  for(int i = 0; i < maxUsers; i++) {
+    if(i != otherUser && takenSpot[i]) {
+      panel_usernames_text[sd][i].changeText(usernames[i]);
+      panel_usernames_text[sd][i].setPos(xheader_text + xOffset[sd], y);
+      y += 0.6*spacing;
+      panel_usernames_text[sd][i].disp();
+    }
   }
+  
 }
 
 void draw_panel_create_user(int sd) {
   panel_enter_button[sd].setPos(xfooter + 1.5*spacing + xOffset[sd], height*0.6 + 3.3*icon_size_small);
   panel_clear_button[sd].setPos(xfooter + 1.5*spacing + xOffset[sd], height*0.5 + 3.3*icon_size_small);
-  textSize(font_size_large);
-  float y = yheader_text;
+  textSize(font_size_small*1.3);
+  float y = yheader_panel_text;
   text(strUsers[lang], xheader_text+xOffset[sd], y);
   panel_user_icon[sd].disp();
   panel_kbs[sd].disp();
@@ -1153,8 +1287,8 @@ void draw_panel_create_user(int sd) {
 void draw_panel_create_user_pin(int sd) {
   panel_enter_button[sd].setPos(xfooter + 0.7*spacing + xOffset[sd], height*0.6 + 3.3*icon_size_small);
   panel_clear_button[sd].setPos(xfooter + 0.7*spacing + xOffset[sd], height*0.5 + 3.3*icon_size_small);
-  textSize(font_size_large);
-  float y = yheader_text;
+  textSize(font_size_small*1.3);
+  float y = yheader_panel_text;
   text(strUsers[lang], xheader_text+xOffset[sd], y);
   panel_user_icon[sd].disp();
   panel_nps[sd].disp();
@@ -1175,8 +1309,8 @@ void draw_panel_create_user_pin(int sd) {
 void draw_panel_select_user_pin(int sd) {
   panel_enter_button[sd].setPos(xfooter + 0.7*spacing + xOffset[sd], height*0.6 + 3.3*icon_size_small);
   panel_clear_button[sd].setPos(xfooter + 0.7*spacing + xOffset[sd], height*0.5 + 3.3*icon_size_small);
-  textSize(font_size_large);
-  float y = yheader_text;
+  textSize(font_size_small*1.3);
+  float y = yheader_panel_text;
   text(strUsers[lang], xheader_text+xOffset[sd], y);
   panel_user_icon[sd].disp();
   panel_nps[sd].disp();
@@ -1196,8 +1330,8 @@ void draw_panel_select_user_pin(int sd) {
 
 void draw_panel_select_user_pin_error(int sd) {
   panel_back_button[sd].setPos(xheader_text+spacing+xOffset[sd], height*0.7);
-  textSize(font_size_large);
-  float y = yheader_text;
+  textSize(font_size_small*1.3);
+  float y = yheader_panel_text;
   text(strUsers[lang], xheader_text+xOffset[sd], y);
   panel_user_icon[sd].disp();
   y += spacing;
@@ -1249,6 +1383,48 @@ void draw_panel_log_out(int sd) {
   panel_apps_button[sd].disp();
 }
 
+void draw_panel_settings(int sd) {
+  textSize(font_size_small*1.3);
+  float y = yheader_panel_text;
+  text(strSettings[lang], xheader_text+xOffset[sd], y);
+  panel_settings_icon[sd].disp();
+  textAlign(LEFT);
+  textSize(font_size_small*0.6);
+  y += 1.0*spacing;
+  text(strLang[lang], xheader-(icon_size_small/2)+xOffset[sd], y);
+  y += 0.5*spacing;
+  text(strColorShift[lang], xheader-(icon_size_small/2)+xOffset[sd], y);
+  y += 0.5*spacing;
+  text(strChangeUnits[lang], xheader-(icon_size_small/2)+xOffset[sd], y);
+  y += 0.5*spacing;
+  panel_back_button[sd].setPos(xheader+2.5*spacing+xOffset[sd], height*0.7); 
+  panel_back_button[sd].disp();
+  panel_delete_user[sd].disp();
+  panel_lang_toggle[sd].disp();
+  panel_flux_toggle[sd].disp();
+  panel_units_toggle[sd].disp();
+}
+
+void draw_delete_user(int sd) {
+  textSize(font_size_small*0.7);
+  if(sd == 0) { // left user
+    textAlign(LEFT);
+    text(usernames[loggedUser[sd]], 0.013*width, height*0.05);
+    textAlign(CENTER);
+    text(strDeleteUser2[lang], width*0.25, height*0.5);
+  }
+  else if (sd == 1) { // right user
+    textAlign(RIGHT);
+    text(usernames[loggedUser[sd]], 0.983*width, height*0.05);
+    textAlign(CENTER);
+    text(strDeleteUser2[lang], width*0.75, height*0.5);
+  }
+  textAlign(LEFT);
+  panel_yes_button[sd].disp();
+  panel_no_button[sd].disp();
+  panel_apps_button[sd].disp();
+}
+
 void draw_panes(int sd) {
   if(isPanelActive[sd]) {
     switch(panels[sd]) {
@@ -1278,6 +1454,12 @@ void draw_panes(int sd) {
       case ePanel.LOG_OUT:
         draw_panel_log_out(sd);
         break;
+      case ePanel.SETTINGS:
+        draw_panel_settings(sd);
+        break;
+      case ePanel.DELETE_USER:
+        draw_delete_user(sd);
+        break;
     }
   }
 }
@@ -1285,7 +1467,22 @@ void draw_panes(int sd) {
 void draw_center_pane() {
 }
 
+void set_flux() {
+  if(isFluxOn) {
+    if(hour() < 7 || hour() > 20) {
+      bg = bg_flux;
+    }
+    else {
+      bg = bg_default;
+    }
+  }
+  else {
+    bg = bg_default;
+  }
+}
+
 void draw_idle() {
+  set_flux();
   background(bg);
   draw_top_pane();
   if (isActiveCenter) {
@@ -1528,7 +1725,7 @@ void draw_setup_wifi_load() {
   text(""+str(progressBar)+"%", xmid, height*0.7);
   if(second() != lastSecond) {
     lastSecond = second();
-    progressBar += int(random(1, 25));
+    progressBar += int(random(1, 50));
   }
   if(progressBar >= 100) {
     st = eState.CREATE_USER;
@@ -1657,10 +1854,13 @@ void mousePressed() {
             panels[i] = ePanel.OFF;
           }
           else {
+            int otherUser = i == 0 ? loggedUser[1] : loggedUser[0];
             for(int j = 0; j < nPasswords; j++) {
               if(panel_usernames_text[i][j].isMouseOver()) {
-                panels[i] = ePanel.SELECT_USER_PIN;
-                loggedUser[i] = j;
+                if(otherUser != j) {
+                  panels[i] = ePanel.SELECT_USER_PIN;
+                  loggedUser[i] = j;
+                }
               }
             }
           }
@@ -1691,7 +1891,8 @@ void mousePressed() {
             input_password[i] = "";
           }
           else if(panel_enter_button[i].isMouseOver()) {
-            usernames = append(usernames, input_password[i]);
+            //usernames = append(usernames, input_password[i]);
+            usernames[freeUser] = input_password[i];
             nUsers++;
             input_password[i] = "";
             panels[i] = ePanel.CREATE_USER_PIN;
@@ -1703,12 +1904,17 @@ void mousePressed() {
             input_password[i] = "";
           }
           else if(panel_enter_button[i].isMouseOver()) {
-            passwords = append(passwords, input_password[i]);
+            //passwords = append(passwords, input_password[i]);
+            passwords[freeUser] = input_password[i];
             nPasswords++;
             for(int j = 0; j < nApps; j++) {
               activeApps[nUsers-1][j] = false;
             }
             input_password[i] = "";
+            takenSpot[freeUser] = true;
+            while(freeUser < maxUsers && takenSpot[freeUser]) {
+              freeUser++;
+            }
             panels[i] = ePanel.SELECT_USER;
           }
           break;
@@ -1729,6 +1935,46 @@ void mousePressed() {
           else if(panel_no_button[i].isMouseOver()) {
             activeApps[loggedUser[i]][findApp("dock_logout")] = false;
             panels[i] = ePanel.ACTIVE;
+          }
+          break;
+        case ePanel.SETTINGS:
+          if(panel_back_button[i].isMouseOver()) {
+            activeApps[loggedUser[i]][findApp("dock_settings")] = false;
+            panels[i] = ePanel.ACTIVE;
+          }
+          else if(panel_lang_toggle[i].isMouseOver()) {
+            lang = (lang + 1) % strLanguages.length;
+            changeLanguage();
+          }
+          else if(panel_flux_toggle[i].isMouseOver()) {
+            isFluxOn = !isFluxOn;
+            changeLanguage();
+          }
+          else if(panel_units_toggle[i].isMouseOver()) {
+            isFahr = !isFahr;
+            changeLanguage();
+          }
+          else if(panel_delete_user[i].isMouseOver()) {
+            panels[i] = ePanel.DELETE_USER;
+          }
+          break;
+        case ePanel.DELETE_USER:
+          if(panel_yes_button[i].isMouseOver()) {
+            for(int j = 0; j < nApps; j++) {
+              activeApps[loggedUser[i]][j] = false;
+            }
+            takenSpot[loggedUser[i]] = false;
+            usernames[loggedUser[i]] = "";
+            passwords[loggedUser[i]] = "";
+            freeUser = loggedUser[i];
+            loggedUser[i] = -1;
+            isPanelActive[i] = false;
+            isDockActive[i] = false;
+            nUsers--;
+            nPasswords--;
+          }
+          else if(panel_no_button[i].isMouseOver()) {
+            panels[i] = ePanel.SETTINGS;
           }
           break;
       }
@@ -1950,7 +2196,8 @@ void mousePressed() {
       if (clear_button.isMouseOver()) {
         input_password[activeKb] = "";
       } else if (enter_input.isMouseOver()) {
-        usernames = append(usernames, input_password[activeKb]);
+        //usernames = append(usernames, input_password[activeKb]);
+        usernames[freeUser] = input_password[activeKb];
         nUsers++;
         input_password[activeKb] = "";
         st = eState.CREATE_USER3;
@@ -1963,7 +2210,10 @@ void mousePressed() {
       if (clear_button.isMouseOver()) {
         input_password[activeKb] = "";
       } else if (enter_input.isMouseOver()) {
-        passwords = append(passwords, input_password[activeKb]);
+        //passwords = append(passwords, input_password[activeKb]);
+        passwords[freeUser] = input_password[activeKb];
+        takenSpot[freeUser] = true;
+        freeUser++;
         input_password[activeKb] = "";
         nPasswords++;
         for(int j = 0; j < nApps; j++) {
