@@ -2284,6 +2284,7 @@ void mousePressed() {
       }
       else if (enter_input.isMouseOver()) {
         nHour = parseInt(input_password[activeKb]);
+        nHour = nHour == 12 ? 0 : nHour;
         st = eState.SETUP_TIME_MINUTE;
         input_password[activeKb] = "";
       }
