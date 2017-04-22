@@ -1,8 +1,4 @@
-/*
-@pjs preload="Data/dock_facebook0.png";
-@pjs preload="Data/dock_facebook1.png";
-@pjs preload="Data/dock_facebook2.png";
-*/
+
 
 color bg_default = color(197, 214, 224);
 color bg_flux = color(224, 207, 197);
@@ -1072,7 +1068,7 @@ void setup() {
   appCycle = new PImage[nUsableModules][nCycleLimit];
   for(int i = 0; i < nUsableModules; i++) {
     for(int j = 0; j < nCycleLimit; j++) {
-      String s = strDockApps[i] + str(j) + ".png";
+      String s = fileDirectory + strDockApps[i] + str(j) + ".png";
       appCycle[i][j] = loadImage(s);
     }
   }
