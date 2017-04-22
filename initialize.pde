@@ -417,6 +417,7 @@ class bt {
       text(txt, x, y);
       fill(255);
     }
+    noTint();
   }
 
   void disp() {
@@ -439,6 +440,7 @@ class bt {
       text(txt, x, y);
       fill(255);
     }
+    noTint();
   }
 
   void disp(color c) {
@@ -461,6 +463,7 @@ class bt {
       text(txt, x, y);
       fill(255);
     }
+    noTint();
   }
 
   boolean isMouseOver() {
