@@ -1636,7 +1636,8 @@ void draw_center_pane() {
 
 void set_flux() {
   if(isFluxOn) {
-    if(hour() < 7 || hour() > 20) {
+    int hr = (hour() + offsetHour) % 24;
+    if(hr < 7 || hr > 20) {
       bg = bg_flux;
     }
     else {
