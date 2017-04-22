@@ -1,3 +1,7 @@
+@pjs preload="dock_facebook0.png";
+@pjs preload="dock_facebook1.png";
+@pjs preload="dock_facebook2.png";
+
 color bg_default = color(197, 214, 224);
 color bg_flux = color(224, 207, 197);
 color dark_gray = color(169, 169, 169);
