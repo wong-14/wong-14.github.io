@@ -79,7 +79,7 @@ int progressBar;
 String[][] userModules;
 int nModules = 3;
 int nUsableModules = 10;
-int nCycleLimit = 5;
+int nCycleLimit = 3;
 int[][] randomModule;
 
 String[][] wifi_spots = {
