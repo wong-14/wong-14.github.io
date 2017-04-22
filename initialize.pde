@@ -1,7 +1,7 @@
 /*
-@pjs preload="dock_facebook0.png";
-@pjs preload="dock_facebook1.png";
-@pjs preload="dock_facebook2.png";
+@pjs preload="Data/dock_facebook0.png";
+@pjs preload="Data/dock_facebook1.png";
+@pjs preload="Data/dock_facebook2.png";
 */
 
 color bg_default = color(197, 214, 224);
