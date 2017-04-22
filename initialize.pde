@@ -58,6 +58,8 @@ int nDay;
 int nMonth;
 int nYear;
 int nMinute = 0;
+int offsetHour = 0;
+int offsetMinute = 0;
 boolean isAM = true;
 boolean wasTimeSet = false;
 String[] daysInMonth = {"31", "29", "31", "30", "31", "30", "31", "31", "30", "31", "30", "31"};
@@ -77,7 +79,7 @@ int progressBar;
 String[][] userModules;
 int nModules = 3;
 int nUsableModules = 10;
-int nCycleLimit = 3;
+int nCycleLimit = 5;
 int[][] randomModule;
 
 String[][] wifi_spots = {
@@ -1075,7 +1077,7 @@ void setup() {
   randomModule = new int[maxUsers][nUsableModules];
   for(int i = 0; i < maxUsers; i++) {
     for(int j = 0; j < nUsableModules; j++) {
-      randomModule[i][j] = int(floor(random(0, 2.999)));
+      randomModule[i][j] = int(floor(random(0, float(nCycleLimit)-0.001)));
     }
   }
 }
@@ -1244,24 +1246,30 @@ void draw_time_and_date() {
   String timeString = "";
   String dateString = "";
   String endString = "";
-  int h = hour()%12;
   String minuteString;
-  minuteString = minute() < 10 ? ("0" + minute()) : ("" + minute());
-  h = h == 0 ? 12 : h;
-  if (hour() < 12) {
-      endString = "am";
+  
+  int m = (minute() + offsetMinute) % 60;
+  int h = (hour() + offsetHour) % 24;
+  if(m < nMinute) {
+    h = (h+1)%60;
+  }
+  minuteString = m < 10 ? ("0" + m) : ("" + m);
+  if (h < 12) {
+    endString = "am";
   }
   else {
-      endString = "pm";
+    endString = "pm";
+    h -= 12;
   }
+  h = h == 0 ? 12 : h;
   if (wasTimeSet) {  // user set time and date
-    timeString = h + ":" + minuteString;
     dateString = strMonths[lang][nMonth] + " " + nDay + ", " + nYear;
   }
   else {
-    timeString = h + ":" + minuteString;
     dateString = strMonths[lang][month()-1] + " " + day() + ", " + year();
   }
+  
+  timeString = h + ":" + minuteString;
   textSize(font_size_small*1.2);
   textAlign(RIGHT);
   text(timeString, xmid-1.47*spacing, ytop);
@@ -2306,8 +2314,11 @@ void mousePressed() {
         isAM = true;
       }
       else if (button_pm.isMouseOver()) {
+        nHour += 12;
         isAM = false;
       }
+      offsetHour = (24 + (nHour - hour())) % 24;
+      offsetMinute = (60 + (nMinute - minute())) % 60;
       break;
     case eState.SETUP_DATE_MONTH:
       osnp.update();
