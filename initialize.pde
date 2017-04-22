@@ -1428,24 +1428,12 @@ void draw_module(int sd, int md, String ap) {
   imageMode(CENTER);
   textAlign(CENTER);
   if(md == 0) {
-    rect(xmid-(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
-    fill(0);
-    text(ap, xmid-(5.0/32)*width+xOffset[sd], ymid);
-    fill(255);
     image(appCycle[whichApp][randomModule[loggedUser[sd]][whichApp]], xmid-(5.0/32)*width+xOffset[sd], ymid);
   }
   else if(md == 1) {
-    rect(xmid+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
-    fill(0);
-    text(ap, xmid+xOffset[sd], ymid);
-    fill(255);
     image(appCycle[whichApp][randomModule[loggedUser[sd]][whichApp]], xmid+xOffset[sd], ymid);
   }
   else {
-    rect(xmid+(5.0/32)*width+xOffset[sd], ymid, width/8, height/2, height/100, height/100, height/100, height/100);
-    fill(0);
-    text(ap, xmid+(5.0/32)*width+xOffset[sd], ymid);
-    fill(255);
     image(appCycle[whichApp][randomModule[loggedUser[sd]][whichApp]], xmid+(5.0/32)*width+xOffset[sd], ymid);
   }
   textAlign(LEFT);
