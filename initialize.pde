@@ -1266,7 +1266,7 @@ void draw_time_and_date() {
   }
   h = h == 0 ? 12 : h;
   if (wasTimeSet) {  // user set time and date
-    dateString = strMonths[lang][nMonth] + " " + nDay + ", " + nYear;
+    dateString = strMonths[lang][nMonth-1] + " " + nDay + ", " + nYear;
   }
   else {
     dateString = strMonths[lang][month()-1] + " " + day() + ", " + year();
