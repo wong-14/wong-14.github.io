@@ -1855,9 +1855,9 @@ void mousePressed() {
           }
           else {
             int otherUser = i == 0 ? loggedUser[1] : loggedUser[0];
-            for(int j = 0; j < nPasswords; j++) {
+            for(int j = 0; j < maxUsers; j++) {
               if(panel_usernames_text[i][j].isMouseOver()) {
-                if(otherUser != j) {
+                if(otherUser != j && takenSpot[j]) {
                   panels[i] = ePanel.SELECT_USER_PIN;
                   loggedUser[i] = j;
                 }
